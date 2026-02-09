@@ -5,7 +5,10 @@ import { alertMessage } from "../message/reducer";
 import { selectIsPublic } from "./selector";
 import { DarkModeType, User } from "./types";
 
-export const checkLogged = myAsyncThunk<User | null, void>(
+export const checkLogged = myAsyncThunk<
+  { user: User | null; isImpersonating: boolean; originalUserId: string | null },
+  void
+>(
   "@user/checklogged",
   async () => {
     try {
@@ -16,14 +19,18 @@ export const checkLogged = myAsyncThunk<User | null, void>(
         } else {
           DateFormatter.setCurrentUsedDateFormat(data.user.settings.dateFormat);
         }
-        return data.user;
+        return {
+          user: data.user,
+          isImpersonating: (data as any).isImpersonating || false,
+          originalUserId: (data as any).originalUserId || null,
+        };
       } else {
-        return null;
+        return { user: null, isImpersonating: false, originalUserId: null };
       }
     } catch (e) {
       console.error(e);
     }
-    return null;
+    return { user: null, isImpersonating: false, originalUserId: null };
   },
 );
 
@@ -178,6 +185,56 @@ export const unblacklistArtist = myAsyncThunk<void, string>(
           message: "Could not unblacklist this artist",
         }),
       );
+    }
+  },
+);
+
+export const impersonateUser = myAsyncThunk<void, string>(
+  "@user/impersonate",
+  async (userId, tapi) => {
+    try {
+      await api.impersonate(userId);
+      await tapi.dispatch(checkLogged());
+      tapi.dispatch(
+        alertMessage({
+          level: "info",
+          message: "Now impersonating user",
+        }),
+      );
+    } catch (e) {
+      console.error(e);
+      tapi.dispatch(
+        alertMessage({
+          level: "error",
+          message: "Could not impersonate user",
+        }),
+      );
+      throw e;
+    }
+  },
+);
+
+export const stopImpersonating = myAsyncThunk<void, void>(
+  "@user/stop-impersonate",
+  async (_, tapi) => {
+    try {
+      await api.stopImpersonate();
+      await tapi.dispatch(checkLogged());
+      tapi.dispatch(
+        alertMessage({
+          level: "success",
+          message: "Stopped impersonating",
+        }),
+      );
+    } catch (e) {
+      console.error(e);
+      tapi.dispatch(
+        alertMessage({
+          level: "error",
+          message: "Could not stop impersonating",
+        }),
+      );
+      throw e;
     }
   },
 );

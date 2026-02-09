@@ -215,6 +215,8 @@ export const api = {
       status,
     }),
   deleteUser: (id: string) => delet(`/account/${id}`),
+  impersonate: (userId: string) => axios.post(`/impersonate/${userId}`),
+  stopImpersonate: () => axios.post("/stop-impersonate"),
   setGlobalPreferences: (preferences: Partial<GlobalPreferences>) =>
     post<GlobalPreferences>("/global/preferences", preferences),
   play: (id: string) =>

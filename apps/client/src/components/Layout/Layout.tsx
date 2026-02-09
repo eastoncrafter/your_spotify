@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Drawer } from "@mui/material";
+import { Drawer, Button } from "@mui/material";
 import clsx from "clsx";
 import { useSelector } from "react-redux";
-import { selectPublicToken } from "../../services/redux/modules/user/selector";
+import { selectPublicToken, selectIsImpersonating, selectUser } from "../../services/redux/modules/user/selector";
+import { stopImpersonating } from "../../services/redux/modules/user/thunk";
+import { useAppDispatch } from "../../services/redux/tools";
 import Text from "../Text";
 import s from "./index.module.css";
 import Sider from "./Sider";
@@ -16,13 +18,20 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [open, setOpen] = useState(false);
   const { siderAllowed, siderIsDrawer } = useSider();
+  const dispatch = useAppDispatch();
 
   const publicToken = useSelector(selectPublicToken);
+  const isImpersonating = useSelector(selectIsImpersonating);
+  const user = useSelector(selectUser);
 
   const layoutContextValue = {
       openDrawer: () => setOpen(true),
       closeDrawer: () => setOpen(false),
     };
+
+  const handleStopImpersonating = () => {
+    dispatch(stopImpersonating());
+  };
 
   return (
     <LayoutContext.Provider value={layoutContextValue}>
@@ -43,6 +52,21 @@ export default function Layout({ children }: LayoutProps) {
           {publicToken && (
             <div className={s.publictoken}>
               <Text size="normal">You are viewing as guest</Text>
+            </div>
+          )}
+          {isImpersonating && user && (
+            <div className={s.impersonating}>
+              <Text size="normal">
+                You are impersonating {user.username}
+              </Text>
+              <Button 
+                onClick={handleStopImpersonating}
+                variant="outlined"
+                size="small"
+                sx={{ ml: 2 }}
+              >
+                Stop Impersonating
+              </Button>
             </div>
           )}
           {children}

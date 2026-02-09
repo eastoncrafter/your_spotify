@@ -61,7 +61,7 @@ const baselogged = async (req: Request, useQueryToken = false) => {
   if (useQueryToken && queryToken && typeof queryToken === "string") {
     const user = await getUserFromField("publicToken", queryToken, false);
     if (user) {
-      return user;
+      return { user, isImpersonating: false, originalUserId: undefined };
     }
   }
 
@@ -77,6 +77,7 @@ const baselogged = async (req: Request, useQueryToken = false) => {
     }
     const jwtUser = verify(auth, privateData.jwtPrivateKey) as {
       userId: string;
+      originalUserId?: string;
     };
 
     if (typeof jwtUser.userId !== "string") {
@@ -92,7 +93,12 @@ const baselogged = async (req: Request, useQueryToken = false) => {
     if (!user) {
       return null;
     }
-    return user;
+    
+    return {
+      user,
+      isImpersonating: !!jwtUser.originalUserId,
+      originalUserId: jwtUser.originalUserId,
+    };
   } catch {
     return null;
   }
@@ -104,11 +110,13 @@ export const logged = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const user = await baselogged(req, false);
-  if (!user) {
+  const result = await baselogged(req, false);
+  if (!result) {
     throw new NotLoggedError();
   }
-  (req as LoggedRequest).user = user;
+  (req as LoggedRequest).user = result.user;
+  (req as LoggedRequest).isImpersonating = result.isImpersonating;
+  (req as LoggedRequest).originalUserId = result.originalUserId;
   next();
 };
 
@@ -117,11 +125,13 @@ export const isLoggedOrGuest = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const user = await baselogged(req, true);
-  if (!user) {
+  const result = await baselogged(req, true);
+  if (!result) {
     throw new NotLoggedError();
   }
-  (req as LoggedRequest).user = user;
+  (req as LoggedRequest).user = result.user;
+  (req as LoggedRequest).isImpersonating = result.isImpersonating;
+  (req as LoggedRequest).originalUserId = result.originalUserId;
   next();
 };
 
@@ -130,8 +140,10 @@ export const optionalLoggedOrGuest = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const user = await baselogged(req, true);
-  (req as OptionalLoggedRequest).user = user;
+  const result = await baselogged(req, true);
+  (req as OptionalLoggedRequest).user = result?.user ?? null;
+  (req as OptionalLoggedRequest).isImpersonating = result?.isImpersonating;
+  (req as OptionalLoggedRequest).originalUserId = result?.originalUserId;
   next();
 };
 
@@ -140,8 +152,10 @@ export const optionalLogged = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const user = await baselogged(req, false);
-  (req as OptionalLoggedRequest).user = user;
+  const result = await baselogged(req, false);
+  (req as OptionalLoggedRequest).user = result?.user ?? null;
+  (req as OptionalLoggedRequest).isImpersonating = result?.isImpersonating;
+  (req as OptionalLoggedRequest).originalUserId = result?.originalUserId;
   next();
 };
 

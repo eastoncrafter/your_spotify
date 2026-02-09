@@ -1,7 +1,8 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { v4 } from "uuid";
+import { sign } from "jsonwebtoken";
 import {
   admin,
   isLoggedOrGuest,
@@ -24,6 +25,7 @@ import { deleteUser } from "../tools/user";
 import { GithubAPI } from "../tools/apis/githubApi";
 import { Version } from "../tools/version";
 import { getWithDefault } from "../tools/env";
+import { getPrivateData } from "../database/queries/privateData";
 
 export const router = Router();
 
@@ -66,9 +68,14 @@ router.post("/settings", logged, async (req, res) => {
 });
 
 router.get("/me", optionalLoggedOrGuest, async (req, res) => {
-  const { user } = req as OptionalLoggedRequest;
+  const { user, isImpersonating, originalUserId } = req as OptionalLoggedRequest;
   if (user) {
-    res.status(200).send({ status: true, user });
+    res.status(200).send({ 
+      status: true, 
+      user,
+      isImpersonating: isImpersonating || false,
+      originalUserId: originalUserId || null
+    });
     return;
   }
   res.status(200).send({ status: false });
@@ -148,6 +155,102 @@ router.put("/rename", logged, async (req, res) => {
 
   await storeInUser("_id", user._id, { username: newName });
   res.status(204).end();
+});
+
+function storeTokenInCookie(
+  request: Request,
+  response: Response,
+  token: string,
+) {
+  response.cookie("token", token, {
+    sameSite: "strict",
+    httpOnly: true,
+    secure: request.secure,
+  });
+}
+
+const impersonateUser = z.object({
+  userId: z.string(),
+});
+
+router.post("/impersonate/:userId", logged, admin, async (req, res) => {
+  const { user } = req as LoggedRequest;
+  const { userId } = validate(req.params, impersonateUser);
+
+  // Validate the target user exists
+  const targetUser = await getUserFromField("_id", new Types.ObjectId(userId), false);
+  if (!targetUser) {
+    res.status(404).send({ code: "USER_NOT_FOUND" });
+    return;
+  }
+
+  // Generate JWT token with impersonation data
+  const privateData = await getPrivateData();
+  if (!privateData?.jwtPrivateKey) {
+    throw new Error("No private data found, cannot sign JWT");
+  }
+
+  const token = sign(
+    { 
+      userId: targetUser._id.toString(),
+      originalUserId: user._id.toString() 
+    },
+    privateData.jwtPrivateKey,
+    {
+      expiresIn: getWithDefault("COOKIE_VALIDITY_MS", "1h") as `${number}`,
+    },
+  );
+
+  storeTokenInCookie(req, res, token);
+  res.status(200).send({ 
+    impersonatedUser: {
+      id: targetUser._id.toString(),
+      username: targetUser.username
+    }
+  });
+});
+
+router.post("/stop-impersonate", logged, async (req, res) => {
+  const { user } = req as LoggedRequest;
+  
+  // Check if there's an originalUserId in the token (middleware should set this)
+  const auth = req.cookies.token;
+  if (!auth) {
+    res.status(401).send({ code: "NOT_LOGGED" });
+    return;
+  }
+
+  try {
+    const privateData = await getPrivateData();
+    if (!privateData?.jwtPrivateKey) {
+      throw new Error("No private data found, cannot sign JWT");
+    }
+    
+    const jwtUser = require("jsonwebtoken").verify(auth, privateData.jwtPrivateKey) as {
+      userId: string;
+      originalUserId?: string;
+    };
+
+    // If not impersonating, just return current state
+    if (!jwtUser.originalUserId) {
+      res.status(200).send({ wasImpersonating: false });
+      return;
+    }
+
+    // Generate new token for the original admin user
+    const token = sign(
+      { userId: jwtUser.originalUserId },
+      privateData.jwtPrivateKey,
+      {
+        expiresIn: getWithDefault("COOKIE_VALIDITY_MS", "1h") as `${number}`,
+      },
+    );
+
+    storeTokenInCookie(req, res, token);
+    res.status(200).send({ wasImpersonating: true });
+  } catch (e) {
+    res.status(401).send({ code: "INVALID_TOKEN" });
+  }
 });
 
 router.get("/version", async (_, res) => {

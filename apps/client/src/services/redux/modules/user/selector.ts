@@ -68,3 +68,11 @@ export const selectBlacklistedArtists = createSelector(
   selectUser,
   user => user?.settings.blacklistedArtists ?? [],
 );
+export const selectIsImpersonating = createSelector(
+  selectUserState,
+  state => state.isImpersonating,
+);
+export const selectOriginalUserId = createSelector(
+  selectUserState,
+  state => state.originalUserId,
+);
