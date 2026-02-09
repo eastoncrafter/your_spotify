@@ -205,7 +205,10 @@ export const api = {
   spotify: () => get("/oauth/spotify"),
   logout: () => axios.post("/logout"),
 
-  me: () => get<{ status: true; user: User } | { status: false }>("/me"),
+  me: () => get<
+    | { status: true; user: User; isImpersonating: boolean; originalUserId: string | null }
+    | { status: false }
+  >("/me"),
   sme: () => get<SpotifyMe>("/oauth/spotify/me"),
   globalPreferences: () => get<GlobalPreferences>("/global/preferences"),
   rename: (newName: string) => put("/rename", { newName }),

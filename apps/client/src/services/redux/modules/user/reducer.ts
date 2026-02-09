@@ -39,6 +39,8 @@ export default createReducer(initialState, builder => {
   builder.addCase(logout, state => {
     state.user = null;
     state.publicToken = null;
+    state.isImpersonating = false;
+    state.originalUserId = null;
     api.publicToken = null;
   });
 

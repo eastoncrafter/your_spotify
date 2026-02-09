@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { v4 } from "uuid";
-import { sign } from "jsonwebtoken";
+import { sign, verify } from "jsonwebtoken";
 import {
   admin,
   isLoggedOrGuest,
@@ -226,7 +226,7 @@ router.post("/stop-impersonate", logged, async (req, res) => {
       throw new Error("No private data found, cannot sign JWT");
     }
     
-    const jwtUser = require("jsonwebtoken").verify(auth, privateData.jwtPrivateKey) as {
+    const jwtUser = verify(auth, privateData.jwtPrivateKey) as {
       userId: string;
       originalUserId?: string;
     };

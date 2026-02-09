@@ -21,8 +21,8 @@ export const checkLogged = myAsyncThunk<
         }
         return {
           user: data.user,
-          isImpersonating: (data as any).isImpersonating || false,
-          originalUserId: (data as any).originalUserId || null,
+          isImpersonating: data.isImpersonating,
+          originalUserId: data.originalUserId,
         };
       } else {
         return { user: null, isImpersonating: false, originalUserId: null };
