@@ -2,19 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { getGlobalPreferences, updateGlobalPreferences } from "../database";
 import { admin, logged, validate } from "../tools/middleware";
-import { getWithDefault } from "../tools/env";
+import { blockIfOffline } from "../tools/offlineMiddleware";
 
 export const router = Router();
-
-// Middleware to check if offline mode is enabled
-const blockIfOffline = (req: any, res: any, next: any) => {
-  const offlineMode = getWithDefault("OFFLINE_MODE", false);
-  if (offlineMode) {
-    res.status(403).send({ code: "OFFLINE_MODE", message: "Write operations are disabled in offline mode" });
-    return;
-  }
-  next();
-};
 
 router.get("/preferences", async (req, res) => {
   const preferences = await getGlobalPreferences();

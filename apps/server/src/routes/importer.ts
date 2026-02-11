@@ -3,6 +3,7 @@ import { z } from "zod";
 import multer from "multer";
 import { logger } from "../tools/logger";
 import { logged, notAlreadyImporting, validate } from "../tools/middleware";
+import { blockIfOffline } from "../tools/offlineMiddleware";
 import { LoggedRequest } from "../tools/types";
 import {
   canUserImport,
@@ -14,19 +15,8 @@ import {
   getUserImporterState,
 } from "../database/queries/importer";
 import { ImporterState, ImporterStateTypes } from "../tools/importers/types";
-import { getWithDefault } from "../tools/env";
 
 export const router = Router();
-
-// Middleware to check if offline mode is enabled
-const blockIfOffline = (req: any, res: any, next: any) => {
-  const offlineMode = getWithDefault("OFFLINE_MODE", false);
-  if (offlineMode) {
-    res.status(403).send({ code: "OFFLINE_MODE", message: "Import functionality is disabled in offline mode" });
-    return;
-  }
-  next();
-};
 
 const upload = multer({
   dest: "/tmp/imports/",

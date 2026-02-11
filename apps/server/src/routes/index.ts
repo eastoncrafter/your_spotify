@@ -10,6 +10,7 @@ import {
   optionalLoggedOrGuest,
   validate,
 } from "../tools/middleware";
+import { blockIfOffline } from "../tools/offlineMiddleware";
 import {
   changeSetting,
   getAllAdmins,
@@ -28,16 +29,6 @@ import { getWithDefault } from "../tools/env";
 import { getPrivateData } from "../database/queries/privateData";
 
 export const router = Router();
-
-// Middleware to check if offline mode is enabled
-const blockIfOffline = (req: any, res: any, next: any) => {
-  const offlineMode = getWithDefault("OFFLINE_MODE", false);
-  if (offlineMode) {
-    res.status(403).send({ code: "OFFLINE_MODE", message: "Write operations are disabled in offline mode" });
-    return;
-  }
-  next();
-};
 
 router.get("/", (_, res) => {
   res.status(200).send("Hello !");

@@ -55,9 +55,14 @@ router.get("/spotify", async (req, res) => {
     if (!userId && offlineMode) {
       const users = await getAllUsers(false);
       if (users && users.length > 0) {
-        userId = users[0]!._id.toString();
-        logger.info(`Offline mode: Using first user ${users[0]!.username}`);
-      } else {
+        const firstUser = users[0];
+        if (firstUser) {
+          userId = firstUser._id.toString();
+          logger.info(`Offline mode: Using first user ${firstUser.username}`);
+        }
+      }
+      
+      if (!userId) {
         res.status(500).send({ error: "No users found in database for offline mode" });
         return;
       }
