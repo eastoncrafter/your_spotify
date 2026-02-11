@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { playTrack } from "../../services/redux/modules/user/thunk";
 import { useAppDispatch } from "../../services/redux/tools";
 import { SpotifyImage } from "../../services/types";
+import { isOfflineMode } from "../../services/offline";
 import IdealImage from "../IdealImage";
 import s from "./index.module.css";
 
@@ -15,10 +16,24 @@ interface PlayButtonProps {
 
 export default function PlayButton({ id, covers, className }: PlayButtonProps) {
   const dispatch = useAppDispatch();
+  const offlineMode = isOfflineMode();
 
   const play = () => {
     dispatch(playTrack(id));
   };
+
+  // Don't show play button in offline mode
+  if (offlineMode) {
+    return (
+      <div className={clsx(s.root, className)}>
+        <IdealImage
+          images={covers}
+          size={48}
+          className={clsx("play-image", s.image)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={clsx(s.root, className)}>

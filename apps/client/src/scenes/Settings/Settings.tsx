@@ -14,6 +14,7 @@ import {
   selectUser,
 } from "../../services/redux/modules/user/selector";
 import { compact, conditionalEntry } from "../../services/tools";
+import { isOfflineMode } from "../../services/offline";
 import AccountInfos from "./AccountInfos";
 import AllowRegistration from "./AllowRegistration";
 import BlacklistArtist from "./BlacklistArtist";
@@ -35,6 +36,7 @@ export default function Settings() {
   const sme = useAPI(api.sme);
   const user = useSelector(selectUser);
   const isPublic = useSelector(selectIsPublic);
+  const offlineMode = isOfflineMode();
 
   if (!settings) {
     return (
@@ -57,7 +59,7 @@ export default function Settings() {
     ),
     conditionalEntry(
       { url: "/settings/admin", label: "Admin" },
-      user.admin && !isPublic,
+      user.admin && !isPublic && !offlineMode,
     ),
   ]);
 
@@ -65,7 +67,7 @@ export default function Settings() {
     <div>
       <Header
         title="Settings"
-        subtitle="Here are the settings for Your Spotify, anyone with an account can access this page"
+        subtitle={offlineMode ? "Viewing in read-only offline mode" : "Here are the settings for Your Spotify, anyone with an account can access this page"}
         hideInterval
       />
       <ButtonsHeader items={tabs} />
@@ -75,7 +77,7 @@ export default function Settings() {
             path="/account"
             element={
               <Masonry>
-                {!isPublic && (
+                {!isPublic && !offlineMode && (
                   <AccountInfos
                     user={user}
                     settings={settings}
@@ -86,9 +88,9 @@ export default function Settings() {
                   <SpotifyAccountInfos spotifyAccount={sme} />
                 )}
                 <DarkMode />
-                {!isPublic && <RelogToSpotify />}
-                {!isPublic && <Importer />}
-                {!isPublic && <PublicToken />}
+                {!isPublic && !offlineMode && <RelogToSpotify />}
+                {!isPublic && !offlineMode && <Importer />}
+                {!isPublic && !offlineMode && <PublicToken />}
               </Masonry>
             }
           />
@@ -96,12 +98,12 @@ export default function Settings() {
             path="/admin"
             element={
               <Masonry>
-                {user.admin && !isPublic && <SetAdmin />}
-                {user.admin && !isPublic && <DeleteUser />}
-                {user.admin && !isPublic && (
+                {user.admin && !isPublic && !offlineMode && <SetAdmin />}
+                {user.admin && !isPublic && !offlineMode && <DeleteUser />}
+                {user.admin && !isPublic && !offlineMode && (
                   <AllowRegistration settings={settings} />
                 )}
-                {user.admin && !isPublic && (
+                {user.admin && !isPublic && !offlineMode && (
                   <EnableAffinity settings={settings} />
                 )}
               </Masonry>
@@ -111,7 +113,7 @@ export default function Settings() {
             path="/statistics"
             element={
               <Masonry>
-                {!isPublic && <BlacklistArtist />}
+                {!isPublic && !offlineMode && <BlacklistArtist />}
                 {!isPublic && <Timezone />}
                 {!isPublic && <DateFormat />}
                 {!isPublic && <StatMeasurement />}
