@@ -14,8 +14,19 @@ import {
   getUserImporterState,
 } from "../database/queries/importer";
 import { ImporterState, ImporterStateTypes } from "../tools/importers/types";
+import { getWithDefault } from "../tools/env";
 
 export const router = Router();
+
+// Middleware to check if offline mode is enabled
+const blockIfOffline = (req: any, res: any, next: any) => {
+  const offlineMode = getWithDefault("OFFLINE_MODE", false);
+  if (offlineMode) {
+    res.status(403).send({ code: "OFFLINE_MODE", message: "Import functionality is disabled in offline mode" });
+    return;
+  }
+  next();
+};
 
 const upload = multer({
   dest: "/tmp/imports/",
@@ -27,6 +38,7 @@ const upload = multer({
 
 router.post(
   "/import/privacy",
+  blockIfOffline,
   upload.array("imports", 50),
   logged,
   notAlreadyImporting,
@@ -62,6 +74,7 @@ router.post(
 
 router.post(
   "/import/full-privacy",
+  blockIfOffline,
   upload.array("imports", 50),
   logged,
   notAlreadyImporting,
@@ -99,7 +112,7 @@ const retrySchema = z.object({
   existingStateId: z.string(),
 });
 
-router.post("/import/retry", logged, notAlreadyImporting, async (req, res) => {
+router.post("/import/retry", blockIfOffline, logged, notAlreadyImporting, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { existingStateId } = validate(req.body, retrySchema);
 
@@ -135,7 +148,7 @@ const cleanupImportSchema = z.object({
   id: z.string(),
 });
 
-router.delete("/import/clean/:id", logged, async (req, res) => {
+router.delete("/import/clean/:id", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { id } = validate(req.params, cleanupImportSchema);
 

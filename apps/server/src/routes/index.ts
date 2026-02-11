@@ -29,6 +29,16 @@ import { getPrivateData } from "../database/queries/privateData";
 
 export const router = Router();
 
+// Middleware to check if offline mode is enabled
+const blockIfOffline = (req: any, res: any, next: any) => {
+  const offlineMode = getWithDefault("OFFLINE_MODE", false);
+  if (offlineMode) {
+    res.status(403).send({ code: "OFFLINE_MODE", message: "Write operations are disabled in offline mode" });
+    return;
+  }
+  next();
+};
+
 router.get("/", (_, res) => {
   res.status(200).send("Hello !");
 });
@@ -59,7 +69,7 @@ const settingsSchema = z.object({
     .optional(),
 });
 
-router.post("/settings", logged, async (req, res) => {
+router.post("/settings", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
   const payload = validate(req.body, settingsSchema);
 
@@ -81,7 +91,7 @@ router.get("/me", optionalLoggedOrGuest, async (req, res) => {
   res.status(200).send({ status: false });
 });
 
-router.post("/generate-public-token", logged, async (req, res) => {
+router.post("/generate-public-token", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
 
   const token = v4();
@@ -89,7 +99,7 @@ router.post("/generate-public-token", logged, async (req, res) => {
   res.status(200).send(token);
 });
 
-router.post("/delete-public-token", logged, async (req, res) => {
+router.post("/delete-public-token", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
 
   await setUserPublicToken(user._id.toString(), null);
@@ -116,7 +126,7 @@ const setAdminBody = z.object({
   status: z.preprocess(toBoolean, z.boolean()),
 });
 
-router.put("/admin/:id", logged, admin, async (req, res) => {
+router.put("/admin/:id", blockIfOffline, logged, admin, async (req, res) => {
   const { id } = validate(req.params, setAdmin);
   const { status } = validate(req.body, setAdminBody);
 
@@ -133,7 +143,7 @@ const deleteAccount = z.object({
   id: z.string(),
 });
 
-router.delete("/account/:id", logged, admin, async (req, res) => {
+router.delete("/account/:id", blockIfOffline, logged, admin, async (req, res) => {
   const { id } = validate(req.params, deleteAccount);
 
   const user = await getUserFromField("_id", new Types.ObjectId(id), false);
@@ -149,7 +159,7 @@ const rename = z.object({
   newName: z.string().max(64).min(2),
 });
 
-router.put("/rename", logged, async (req, res) => {
+router.put("/rename", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { newName } = validate(req.body, rename);
 
@@ -173,7 +183,7 @@ const impersonateUser = z.object({
   userId: z.string(),
 });
 
-router.post("/impersonate/:userId", logged, admin, async (req, res) => {
+router.post("/impersonate/:userId", blockIfOffline, logged, admin, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { userId } = validate(req.params, impersonateUser);
 
@@ -210,7 +220,7 @@ router.post("/impersonate/:userId", logged, admin, async (req, res) => {
   });
 });
 
-router.post("/stop-impersonate", logged, async (req, res) => {
+router.post("/stop-impersonate", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
   
   // Check if there's an originalUserId in the token (middleware should set this)

@@ -14,6 +14,7 @@ const validators = {
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
   NODE_ENV: z.enum(["production", "development"]).optional(),
   OFFLINE_DEV_ID: z.string().optional(),
+  OFFLINE_MODE: z.preprocess(toBoolean, z.boolean().optional()),
   COOKIE_VALIDITY_MS: z.string().optional(),
   MONGO_NO_ADMIN_RIGHTS: z.preprocess(toBoolean, z.boolean().optional()),
   PROMETHEUS_USERNAME: z.string().optional(),

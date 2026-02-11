@@ -5,6 +5,7 @@ import {
   createUser,
   getUserCount,
   getUserFromField,
+  getAllUsers,
   storeInUser,
 } from "../database";
 import { get, getWithDefault } from "../tools/env";
@@ -40,13 +41,29 @@ const spotifyCallbackOAuthCookie = z.object({
 type OAuthCookie = z.infer<typeof spotifyCallbackOAuthCookie>;
 
 router.get("/spotify", async (req, res) => {
-  const isOffline = get("OFFLINE_DEV_ID");
+  const offlineMode = getWithDefault("OFFLINE_MODE", false);
+  const isOffline = get("OFFLINE_DEV_ID") || offlineMode;
+  
   if (isOffline) {
     const privateData = await getPrivateData();
     if (!privateData?.jwtPrivateKey) {
       throw new Error("No private data found, cannot sign JWT");
     }
-    const token = sign({ userId: isOffline }, privateData.jwtPrivateKey, {
+    
+    // In offline mode, use the first user in the database or OFFLINE_DEV_ID if specified
+    let userId = get("OFFLINE_DEV_ID");
+    if (!userId && offlineMode) {
+      const users = await getAllUsers(false);
+      if (users && users.length > 0) {
+        userId = users[0]!._id.toString();
+        logger.info(`Offline mode: Using first user ${users[0]!.username}`);
+      } else {
+        res.status(500).send({ error: "No users found in database for offline mode" });
+        return;
+      }
+    }
+    
+    const token = sign({ userId }, privateData.jwtPrivateKey, {
       expiresIn: getWithDefault("COOKIE_VALIDITY_MS", "1h") as `${number}`,
     });
     storeTokenInCookie(req, res, token);
