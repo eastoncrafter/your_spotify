@@ -6,6 +6,7 @@ import { selectAccounts } from "../../../services/redux/modules/admin/selector";
 import { useAppDispatch } from "../../../services/redux/tools";
 import TitleCard from "../../../components/TitleCard";
 import { alertMessage } from "../../../services/redux/modules/message/reducer";
+import { impersonateUser } from "../../../services/redux/modules/user/thunk";
 
 export default function SetAdmin() {
   const dispatch = useAppDispatch();
@@ -28,6 +29,14 @@ export default function SetAdmin() {
       }
     };
 
+  const doImpersonate = async (id: string) => {
+    try {
+      dispatch(impersonateUser(id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <TitleCard title="Set admin status">
       {accounts.map(user => (
@@ -35,9 +44,14 @@ export default function SetAdmin() {
           key={user.id}
           left={user.username}
           right={
-            <Button onClick={() => doAdmin(user.id, !user.admin)}>
-              {user.admin ? "Unset admin" : "Set admin"}
-            </Button>
+            <>
+              <Button onClick={() => doAdmin(user.id, !user.admin)}>
+                {user.admin ? "Unset admin" : "Set admin"}
+              </Button>
+              <Button onClick={() => doImpersonate(user.id)} sx={{ ml: 1 }}>
+                Impersonate
+              </Button>
+            </>
           }
         />
       ))}

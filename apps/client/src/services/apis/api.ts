@@ -204,8 +204,13 @@ export const api = {
   version: () => get<{ update: boolean; version: string }>("/version"),
   spotify: () => get("/oauth/spotify"),
   logout: () => axios.post("/logout"),
+  getUsersList: () => get<Array<{ id: string; username: string }>>("/users/list"),
+  selectUser: (userId: string) => axios.post<{ success: boolean; username: string }>("/login/select", { userId }),
 
-  me: () => get<{ status: true; user: User } | { status: false }>("/me"),
+  me: () => get<
+    | { status: true; user: User; isImpersonating: boolean; originalUserId: string | null }
+    | { status: false }
+  >("/me"),
   sme: () => get<SpotifyMe>("/oauth/spotify/me"),
   globalPreferences: () => get<GlobalPreferences>("/global/preferences"),
   rename: (newName: string) => put("/rename", { newName }),
@@ -215,6 +220,8 @@ export const api = {
       status,
     }),
   deleteUser: (id: string) => delet(`/account/${id}`),
+  impersonate: (userId: string) => axios.post(`/impersonate/${userId}`),
+  stopImpersonate: () => axios.post("/stop-impersonate"),
   setGlobalPreferences: (preferences: Partial<GlobalPreferences>) =>
     post<GlobalPreferences>("/global/preferences", preferences),
   play: (id: string) =>

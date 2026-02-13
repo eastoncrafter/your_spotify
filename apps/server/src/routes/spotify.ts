@@ -35,6 +35,7 @@ import {
   validate,
   withHttpClient,
 } from "../tools/middleware";
+import { blockIfOffline } from "../tools/offlineMiddleware";
 import { SpotifyRequest, LoggedRequest, Timesplit } from "../tools/types";
 import { toDate, toNumber } from "../tools/zod";
 import { uniq } from "../tools/misc";
@@ -45,7 +46,7 @@ const playSchema = z.object({
   id: z.string(),
 });
 
-router.post("/play", logged, withHttpClient, async (req, res) => {
+router.post("/play", blockIfOffline, logged, withHttpClient, async (req, res) => {
   const { client } = req as SpotifyRequest;
   const { id } = validate(req.body, playSchema);
 
@@ -426,7 +427,7 @@ const createPlaylist = z.discriminatedUnion("type", [
   createPlaylistBase.merge(createPlaylistFromArtistTop),
 ]);
 
-router.post("/playlist/create", logged, withHttpClient, async (req, res) => {
+router.post("/playlist/create", blockIfOffline, logged, withHttpClient, async (req, res) => {
   const { client, user } = req as LoggedRequest & SpotifyRequest;
   const body = validate(req.body, createPlaylist);
 

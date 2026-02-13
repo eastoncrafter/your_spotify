@@ -9,10 +9,14 @@ export interface GlobalPreferencesRequest extends Request {
 
 export interface LoggedRequest extends Request {
   user: User;
+  isImpersonating?: boolean;
+  originalUserId?: string;
 }
 
 export interface OptionalLoggedRequest extends Request {
   user: User | null;
+  isImpersonating?: boolean;
+  originalUserId?: string;
 }
 
 export interface SpotifyRequest extends Request {

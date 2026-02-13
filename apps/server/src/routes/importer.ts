@@ -3,6 +3,7 @@ import { z } from "zod";
 import multer from "multer";
 import { logger } from "../tools/logger";
 import { logged, notAlreadyImporting, validate } from "../tools/middleware";
+import { blockIfOffline } from "../tools/offlineMiddleware";
 import { LoggedRequest } from "../tools/types";
 import {
   canUserImport,
@@ -27,6 +28,7 @@ const upload = multer({
 
 router.post(
   "/import/privacy",
+  blockIfOffline,
   upload.array("imports", 50),
   logged,
   notAlreadyImporting,
@@ -62,6 +64,7 @@ router.post(
 
 router.post(
   "/import/full-privacy",
+  blockIfOffline,
   upload.array("imports", 50),
   logged,
   notAlreadyImporting,
@@ -99,7 +102,7 @@ const retrySchema = z.object({
   existingStateId: z.string(),
 });
 
-router.post("/import/retry", logged, notAlreadyImporting, async (req, res) => {
+router.post("/import/retry", blockIfOffline, logged, notAlreadyImporting, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { existingStateId } = validate(req.body, retrySchema);
 
@@ -135,7 +138,7 @@ const cleanupImportSchema = z.object({
   id: z.string(),
 });
 
-router.delete("/import/clean/:id", logged, async (req, res) => {
+router.delete("/import/clean/:id", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { id } = validate(req.params, cleanupImportSchema);
 

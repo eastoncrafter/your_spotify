@@ -17,6 +17,7 @@ import {
   ItemType,
 } from "../database";
 import { isLoggedOrGuest, logged, validate } from "../tools/middleware";
+import { blockIfOffline } from "../tools/offlineMiddleware";
 import { LoggedRequest } from "../tools/types";
 
 export const router = Router();
@@ -109,7 +110,7 @@ const blacklist = z.object({
   id: z.string(),
 });
 
-router.post("/blacklist/:id", logged, async (req, res) => {
+router.post("/blacklist/:id", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { id } = validate(req.params, blacklist);
 
@@ -118,7 +119,7 @@ router.post("/blacklist/:id", logged, async (req, res) => {
   res.status(204).end();
 });
 
-router.post("/unblacklist/:id", logged, async (req, res) => {
+router.post("/unblacklist/:id", blockIfOffline, logged, async (req, res) => {
   const { user } = req as LoggedRequest;
   const { id } = validate(req.params, blacklist);
 

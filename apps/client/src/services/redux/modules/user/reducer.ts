@@ -16,6 +16,8 @@ interface UserReducer {
   user: User | null;
   intervalDetail: ReduxIntervalDetail;
   publicToken: string | null;
+  isImpersonating: boolean;
+  originalUserId: string | null;
 }
 
 const initialState: UserReducer = {
@@ -23,6 +25,8 @@ const initialState: UserReducer = {
   user: null,
   intervalDetail: intervalDetailToRedux(presetIntervals[0]),
   publicToken: null,
+  isImpersonating: false,
+  originalUserId: null,
 };
 
 export const logout = createAction("@user/logout");
@@ -35,6 +39,8 @@ export default createReducer(initialState, builder => {
   builder.addCase(logout, state => {
     state.user = null;
     state.publicToken = null;
+    state.isImpersonating = false;
+    state.originalUserId = null;
     api.publicToken = null;
   });
 
@@ -44,8 +50,10 @@ export default createReducer(initialState, builder => {
   });
 
   builder.addCase(checkLogged.fulfilled, (state, { payload }) => {
-    state.user = payload;
+    state.user = payload.user;
     state.loaded = true;
+    state.isImpersonating = payload.isImpersonating;
+    state.originalUserId = payload.originalUserId;
     if (state.user) {
       state.user.isGuest = !!api.publicToken;
     }

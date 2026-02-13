@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { getGlobalPreferences, updateGlobalPreferences } from "../database";
 import { admin, logged, validate } from "../tools/middleware";
+import { blockIfOffline } from "../tools/offlineMiddleware";
 
 export const router = Router();
 
@@ -15,7 +16,7 @@ const updateGlobalPreferencesSchema = z.object({
   allowAffinity: z.boolean().optional(),
 });
 
-router.post("/preferences", logged, admin, async (req, res) => {
+router.post("/preferences", blockIfOffline, logged, admin, async (req, res) => {
   const modifications = validate(req.body, updateGlobalPreferencesSchema);
 
   const newPrefs = await updateGlobalPreferences(modifications);
