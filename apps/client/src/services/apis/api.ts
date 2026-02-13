@@ -204,6 +204,8 @@ export const api = {
   version: () => get<{ update: boolean; version: string }>("/version"),
   spotify: () => get("/oauth/spotify"),
   logout: () => axios.post("/logout"),
+  getUsersList: () => get<Array<{ id: string; username: string }>>("/users/list"),
+  selectUser: (userId: string) => axios.post<{ success: boolean; username: string }>("/login/select", { userId }),
 
   me: () => get<
     | { status: true; user: User; isImpersonating: boolean; originalUserId: string | null }

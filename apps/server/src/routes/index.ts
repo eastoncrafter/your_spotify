@@ -39,6 +39,65 @@ router.post("/logout", async (_, res) => {
   res.status(200).end();
 });
 
+// Public endpoint to list available users for profile selection
+router.get("/users/list", async (_, res) => {
+  const users = await getAllUsers(false);
+  res.status(200).send(
+    users.map(user => ({
+      id: user._id.toString(),
+      username: user.username,
+    })),
+  );
+});
+
+// Simple login endpoint for profile selection (no authentication required)
+const selectUserSchema = z.object({
+  userId: z.string(),
+});
+
+function storeTokenInCookie(
+  request: Request,
+  response: Response,
+  token: string,
+) {
+  response.cookie("token", token, {
+    sameSite: "strict",
+    httpOnly: true,
+    secure: request.secure,
+  });
+}
+
+router.post("/login/select", async (req, res) => {
+  const { userId } = validate(req.body, selectUserSchema);
+
+  // Validate the user exists
+  const user = await getUserFromField("_id", new Types.ObjectId(userId), false);
+  if (!user) {
+    res.status(404).send({ error: "User not found" });
+    return;
+  }
+
+  // Generate JWT token for the selected user
+  const privateData = await getPrivateData();
+  if (!privateData?.jwtPrivateKey) {
+    throw new Error("No private data found, cannot sign JWT");
+  }
+
+  const token = sign(
+    { userId: user._id.toString() },
+    privateData.jwtPrivateKey,
+    {
+      expiresIn: getWithDefault("COOKIE_VALIDITY_MS", "1h") as `${number}`,
+    },
+  );
+
+  storeTokenInCookie(req, res, token);
+  res.status(200).send({ 
+    success: true,
+    username: user.username
+  });
+});
+
 const settingsSchema = z.object({
   historyLine: z.string().transform(toBoolean).optional(),
   preferredStatsPeriod: z.enum(["day", "week", "month", "year"]).optional(),
@@ -157,18 +216,6 @@ router.put("/rename", blockIfOffline, logged, async (req, res) => {
   await storeInUser("_id", user._id, { username: newName });
   res.status(204).end();
 });
-
-function storeTokenInCookie(
-  request: Request,
-  response: Response,
-  token: string,
-) {
-  response.cookie("token", token, {
-    sameSite: "strict",
-    httpOnly: true,
-    secure: request.secure,
-  });
-}
 
 const impersonateUser = z.object({
   userId: z.string(),
