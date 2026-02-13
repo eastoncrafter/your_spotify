@@ -57,3 +57,40 @@ export const deleteUser = myAsyncThunk<void, { id: string }>(
     }
   },
 );
+
+export const generateUserPublicToken = myAsyncThunk<
+  string,
+  { userId: string }
+>("@admin/generateUserPublicToken", async ({ userId }, tapi) => {
+  try {
+    const { data: token } = await api.generateUserPublicToken(userId);
+    return token;
+  } catch (e) {
+    console.error(e);
+    tapi.dispatch(
+      alertMessage({
+        level: "error",
+        message: "Could not generate public token for this user",
+      }),
+    );
+    throw e;
+  }
+});
+
+export const deleteUserPublicToken = myAsyncThunk<void, { userId: string }>(
+  "@admin/deleteUserPublicToken",
+  async ({ userId }, tapi) => {
+    try {
+      await api.deleteUserPublicToken(userId);
+    } catch (e) {
+      console.error(e);
+      tapi.dispatch(
+        alertMessage({
+          level: "error",
+          message: "Could not delete public token for this user",
+        }),
+      );
+      throw e;
+    }
+  },
+);

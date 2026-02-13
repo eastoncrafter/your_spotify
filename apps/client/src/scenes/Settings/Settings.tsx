@@ -21,6 +21,7 @@ import DarkMode from "./DarkMode";
 import DeleteUser from "./DeleteUser";
 import Importer from "./Importer";
 import s from "./index.module.css";
+import ManagePublicToken from "./ManagePublicToken";
 import PublicToken from "./PublicToken";
 import RelogToSpotify from "./RelogToSpotify";
 import SetAdmin from "./SetAdmin";
@@ -97,6 +98,7 @@ export default function Settings() {
             element={
               <Masonry>
                 {user.admin && !isPublic && <SetAdmin />}
+                {user.admin && !isPublic && <ManagePublicToken />}
                 {user.admin && !isPublic && <DeleteUser />}
                 {user.admin && !isPublic && (
                   <AllowRegistration settings={settings} />

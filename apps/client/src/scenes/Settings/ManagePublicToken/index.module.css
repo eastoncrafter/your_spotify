@@ -1,0 +1,21 @@
+.disclaimer {
+  margin-bottom: 16px;
+}
+
+.link {
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+  margin-top: 16px;
+  word-break: break-all;
+}
+
+.link:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}

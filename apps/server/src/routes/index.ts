@@ -97,6 +97,7 @@ router.get("/accounts", isLoggedOrGuest, async (_, res) => {
       username: user.username,
       admin: user.admin,
       firstListenedAt: user.firstListenedAt,
+      publicToken: user.publicToken,
     })),
   );
 });
@@ -121,6 +122,29 @@ router.put("/admin/:id", logged, admin, async (req, res) => {
   await setUserAdmin(id, status);
   res.status(204).end();
 });
+
+router.post(
+  "/admin/:userId/generate-public-token",
+  logged,
+  admin,
+  async (req, res) => {
+    const { userId } = req.params;
+    const token = v4();
+    await setUserPublicToken(userId, token);
+    res.status(200).send(token);
+  },
+);
+
+router.post(
+  "/admin/:userId/delete-public-token",
+  logged,
+  admin,
+  async (req, res) => {
+    const { userId } = req.params;
+    await setUserPublicToken(userId, null);
+    res.status(200).end();
+  },
+);
 
 const deleteAccount = z.object({
   id: z.string(),
