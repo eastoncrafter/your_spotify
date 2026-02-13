@@ -214,6 +214,10 @@ export const api = {
     put(`/admin/${id}`, {
       status,
     }),
+  generateUserPublicToken: (userId: string) =>
+    post<string>(`/admin/${userId}/generate-public-token`),
+  deleteUserPublicToken: (userId: string) =>
+    post(`/admin/${userId}/delete-public-token`),
   deleteUser: (id: string) => delet(`/account/${id}`),
   setGlobalPreferences: (preferences: Partial<GlobalPreferences>) =>
     post<GlobalPreferences>("/global/preferences", preferences),
