@@ -47,7 +47,7 @@ export default function ManagePublicToken() {
     dispatch(
       alertMessage({
         level: "info",
-        message: "Public url copied to clipboard",
+        message: "Public URL copied to clipboard",
       }),
     );
   };
@@ -82,34 +82,37 @@ export default function ManagePublicToken() {
         Generate, view, or delete public tokens for users. A public token
         allows read-only access to a user&apos;s statistics.
       </Text>
-      {accounts.map(user => (
-        <SettingLine
-          key={user.id}
-          left={`${user.username}${user.publicToken ? " (has token)" : ""}`}
-          right={
-            <div className={s.row}>
-              {user.publicToken ? (
-                <>
-                  <Button
-                    onClick={() =>
-                      openTokenDialog(user.id, user.username, user.publicToken!)
-                    }>
-                    Open
-                  </Button>
+      {accounts.map(user => {
+        const { publicToken } = user;
+        return (
+          <SettingLine
+            key={user.id}
+            left={`${user.username}${publicToken ? " (has token)" : ""}`}
+            right={
+              <div className={s.row}>
+                {publicToken ? (
+                  <>
+                    <Button
+                      onClick={() =>
+                        openTokenDialog(user.id, user.username, publicToken)
+                      }>
+                      Open
+                    </Button>
+                    <Button onClick={() => generateToken(user.id)}>
+                      Regenerate
+                    </Button>
+                    <Button onClick={() => deleteToken(user.id)}>Delete</Button>
+                  </>
+                ) : (
                   <Button onClick={() => generateToken(user.id)}>
-                    Regenerate
+                    Generate
                   </Button>
-                  <Button onClick={() => deleteToken(user.id)}>Delete</Button>
-                </>
-              ) : (
-                <Button onClick={() => generateToken(user.id)}>
-                  Generate
-                </Button>
-              )}
-            </div>
-          }
-        />
-      ))}
+                )}
+              </div>
+            }
+          />
+        );
+      })}
     </TitleCard>
   );
 }
